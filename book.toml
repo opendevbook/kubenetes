@@ -1,0 +1,6 @@
+[book]
+authors = ["Sawangpong Muadphet"]
+language = "en"
+multilingual = false
+src = "src"
+title = "Kebenetes cluster"
