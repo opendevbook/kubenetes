@@ -215,7 +215,7 @@ sudo sysctl --system
 **Step-7 Load kernel module**
 ```
 # Load kernel module
-cat <<EOF | sudo /etc/modules-load.d/k8s.conf 
+cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf 
 overlay
 br_netfilter
 EOF
