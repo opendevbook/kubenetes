@@ -1,5 +1,13 @@
 # Deploy first deployment
 
+
+create project folder
+```
+mkdir controller
+cd controller
+vim nginx-deployment.yaml
+```
+
 ```yml
 apiVersion: apps/v1
 kind: Deployment
@@ -33,3 +41,73 @@ kubectl describe deployment nginx-deployment
 ```
 
 ![](../assets/images/first_deploy.png)
+
+Run ```kubectl get deployments``` to check if the Deployment was created.
+
+If the Deployment is still being created, the output is similar to the following:
+
+```
+[vagrant@k8s-master-01 ~]$ kubectl get deployments
+NAME                  READY   UP-TO-DATE   AVAILABLE   AGE
+kubernetes-bootcamp   0/1     1            0           14h
+```
+
+
+When you inspect the Deployments in your cluster, the following fields are displayed:
+
+- NAME lists the names of the Deployments in the namespace.
+- READY displays how many replicas of the application are available to your users. It follows the pattern ready/desired.
+- UP-TO-DATE displays the number of replicas that have been updated to achieve the desired state.
+- AVAILABLE displays how many replicas of the application are available to your users.
+- AGE displays the amount of time that the application has been running.
+
+**Notice** how the number of desired replicas is 3 according to .spec.replicas field.
+
+- To see the ReplicaSet (rs) created by the Deployment, run kubectl get rs. The output is similar to this:
+
+```
+[vagrant@k8s-master-01 ~]$ kubectl get rs
+NAME                          DESIRED   CURRENT   READY   AGE
+nginx-deployment-86dcfdf4c6   2         2         0       18h
+
+```
+
+ReplicaSet output shows the following fields:
+
+- NAME lists the names of the ReplicaSets in the namespace.
+- DESIRED displays the desired number of replicas of the application, which you define when you create the Deployment. This is the desired state.
+- CURRENT displays how many replicas are currently running.
+- READY displays how many replicas of the application are available to your users.
+- AGE displays the amount of time that the application has been running.-
+
+- To see the labels automatically generated for each Pod, run kubectl get pods --show-labels. The output is similar to:
+
+```
+[vagrant@k8s-master-01 ~]$ kubectl get pods --show-labels
+NAME                                READY   STATUS              RESTARTS   AGE   LABELS      
+nginx-deployment-86dcfdf4c6-fw8hn   0/1     ContainerCreating   0          18h   app=nginx,pod-template-hash=86dcfdf4c6
+nginx-deployment-86dcfdf4c6-mzhm2   0/1     ContainerCreating   0          18h   app=nginx,pod-template-hash=86dcfdf4c6
+```
+
+- To see network  run kubectl get services
+
+```
+[vagrant@k8s-master-01 ~]$ kubectl get services
+NAME         TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+kubernetes   ClusterIP   10.96.0.1    <none>        443/TCP   22h
+```
+
+-Running get pods should now show only the new Pods
+```
+NAME                                READY   STATUS              RESTARTS   AGE
+nginx-deployment-86dcfdf4c6-fw8hn   0/1     ContainerCreating   0          18h
+nginx-deployment-86dcfdf4c6-mzhm2   0/1     ContainerCreating   0          18h
+```
+
+- Delete deployment
+```
+[vagrant@k8s-master-01 ~]$ kubectl delete deployments.apps nginx-deployment 
+deployment.apps "nginx-deployment" deleted
+[vagrant@k8s-master-01 ~]$ kubectl delete pods  --all
+No resources found
+```
