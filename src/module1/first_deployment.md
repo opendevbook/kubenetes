@@ -89,19 +89,21 @@ nginx-deployment-86dcfdf4c6-fw8hn   0/1     ContainerCreating   0          18h  
 nginx-deployment-86dcfdf4c6-mzhm2   0/1     ContainerCreating   0          18h   app=nginx,pod-template-hash=86dcfdf4c6
 ```
 
-- To see network  run kubectl get services
 
-```
-[vagrant@k8s-master-01 ~]$ kubectl get services
-NAME         TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
-kubernetes   ClusterIP   10.96.0.1    <none>        443/TCP   22h
-```
 
 -Running get pods should now show only the new Pods
 ```
 NAME                                READY   STATUS              RESTARTS   AGE
 nginx-deployment-86dcfdf4c6-fw8hn   0/1     ContainerCreating   0          18h
 nginx-deployment-86dcfdf4c6-mzhm2   0/1     ContainerCreating   0          18h
+```
+
+- To see network  run kubectl get services
+
+```
+[vagrant@k8s-master-01 ~]$ kubectl get services
+NAME         TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+kubernetes   ClusterIP   10.96.0.1    <none>        443/TCP   22h
 ```
 
 - Delete deployment
