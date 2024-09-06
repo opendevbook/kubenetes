@@ -220,8 +220,8 @@ overlay
 br_netfilter
 EOF
 
-sudo overlay
-sudo br_netfilter 
+sudo modprobe overlay
+sudo modprobe br_netfilter 
 
 lsmod | grep overlay
 lsmod | grep br_netfilter
