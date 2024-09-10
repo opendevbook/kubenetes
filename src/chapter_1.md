@@ -361,12 +361,15 @@ sudo ctr run --rm docker.io/library/hello-world:latest test
 ```
 
 **Step-13 create kubenetes control plan**
+![](./assets/images/kubeadm.png)
+
 - use kubeadm init to create control plain
 ```
 sudo kubeadm init  --control-plane-endpoint 192.168.35.10 --ignore-preflight-errors=DirAvailable--var-lib-etcd --pod-network-cidr=10.244.0.0/16
 ```
-
+- For flannel to work correctly, you must pass --pod-network-cidr=10.244.0.0/16 to kubeadm init.
 Result Screen:
+
 
 ![](./assets/images/kube_success2.png)
 
