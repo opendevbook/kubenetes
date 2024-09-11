@@ -14,6 +14,7 @@ vagrantfile
 # you're doing.
 
 $script=<<-SCRIPT
+    echo "\nStart Script"
     sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config    
     systemctl restart sshd.service
     sudo dnf update -y
@@ -30,7 +31,7 @@ $script=<<-SCRIPT
     sudo dnf install -y docker-ce docker-ce-cli containerd.io
     sudo systemctl enable --now docker
     sudo usermod -aG docker vagrant
-
+    
     # install containerd daemon
     sudo dnf install -y containerd.io
     sudo systemctl enable --now containerd
@@ -49,9 +50,13 @@ cat <<EOF | sudo /etc/modules-load.d/k8s.conf
 overlay
 br_netfilter
 EOF
-    sudo overlay
-    sudo br_netfilter
-
+    sudo modprobe overlay
+    sudo modbrobe br_netfilter
+    
+    echo "show kernel module"
+    sudo lsmod | grep overlay
+    sudo lsmod | grep br_netfilter
+    
     # Enable Firewall
     sudo firewall-cmd --permanent --add-port={6443,2379,2380,10250,10251,10252}/tcp
     sudo firewall-cmd --reload
@@ -67,13 +72,30 @@ gpgkey=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/repodata/repomd.xml.key
 exclude=kubelet kubeadm kubectl cri-tools kubernetes-cni
 EOF
 
-
+  
     sudo dnf install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
     sudo systemctl enable --now kubelet
+    echo "\nRun command: sudo systemctl status kubelet"
     sudo systemctl status kubelet
 
     source <(kubectl completion bash)
-    sudo kubectl completion bash > /etc/bash_completion.d/kubectl
+    sudo kubectl completion bash | sudo tee  /etc/bash_completion.d/kubectl
+
+    sudo mv /etc/containerd/config.toml  /etc/containerd/config.toml.orgi
+    sudo containerd config default | sudo tee /etc/containerd/config.toml
+
+    sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/g' /etc/containerd/config.toml
+   
+    sudo systemctl restart containerd   
+    sudo systemctl status containerd.service
+
+cat <<EOF   | sudo tee -a /etc/sysctl.conf
+net.bridge.bridge-nf-call-iptables=1
+net.ipv4.ip_forward=1
+EOF
+    sudo "show sysctl -p"
+    sudo sysctl -p
+
 SCRIPT
 
 Vagrant.configure("2") do |config|
@@ -86,8 +108,8 @@ Vagrant.configure("2") do |config|
     control.vm.hostname = "k8s-master-01"
     control.vm.network "private_network", ip: "192.168.35.10"
     control.vm.provider "virtualbox" do |vb|
-      vb.memory = "2048"
-      vb.cpus = 2
+      vb.memory = "4096"
+      vb.cpus = 4
     end
 
     control.vm.provision "shell", inline: <<-SCRIPT
@@ -143,11 +165,12 @@ Vagrant.configure("2") do |config|
     SCRIPT
   end
 
-  config.vm.synced_folder ".", "/vagrant"
+  #config.vm.synced_folder ".", "/vagrant"
 
 
   config.vm.provision "shell", inline: $script
 end
+
 ```
 
 **Create infrastructure**
@@ -250,11 +273,16 @@ Here's a brief explanation of the ports and protocols related to Kubernetes comp
 
 - 10252/TCP: This port is for the kube-controller-manager. The controller manager is responsible for managing the various controllers that regulate the state of the cluster.
 
+- 8472 (UDP): Flannel VXLAN traffic
+
+- 2379-2380 (TCP): etcd (if applicable)
 
 **Step-8 Enable Firewall**
 ```
 # Enable Firewall
 sudo firewall-cmd --permanent --add-port={6443,2379,2380,10250,10251,10252}/tcp
+sudo firewall-cmd --permanent --add-port=8472/udp
+sudo firewall-cmd --permanent --add-port=2379-2380/tcp
 sudo firewall-cmd --reload
 ```
 
@@ -322,30 +350,29 @@ sudo journalctl -u kubelet -xe
 **Step-11 Add Bash completion**
 ```
 source <(kubectl completion bash)
-sudo kubectl completion bash > /etc/bash_completion.d/kubectl
+sudo kubectl completion bash | sudo tee /etc/bash_completion.d/kubectl
 ```
 
 # Create a Kubernetes Cluster
 
 **Step-12 Modify defualt config of containerd**
-- We have to initialize kubeadm on the master node. This command will check against the node that we have all the required dependencies. If it is passed, then it will install control plane components.
+
 (Note: Run this command in Master Node only.)
 - Run in very node (k8s-master-01,k8s-node-01,k8s-node-02,k8s-node-03)
 
 ```bash
 sudo mv /etc/containerd/config.toml  /etc/containerd/config.toml.orgi
 sudo containerd config default | sudo tee /etc/containerd/config.toml
+sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/g' /etc/containerd/config.toml
 sudo grep -in systemd /etc/containerd/config.toml
-
+```
+Result after use ```sudo sed``` to edit config
+```
 73:    systemd_cgroup = false
-139:            SystemdCgroup = false
+139:            SystemdCgroup = true
 ```
 > change at line 139 ``` SystemdCgroup = true```
 > use command:
-
-```
-sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/g' /etc/containerd/config.toml
-```
 
 ```
 sudo systemctl restart containerd
@@ -363,10 +390,11 @@ sudo ctr run --rm docker.io/library/hello-world:latest test
 **Step-13 create kubenetes control plan**
 ![](./assets/images/kubeadm.png)
 
-- use kubeadm init to create control plain
+Run only in k8s-master-01. use kubeadm init to create control plain.
 ```
-sudo kubeadm init  --control-plane-endpoint 192.168.35.10 --ignore-preflight-errors=DirAvailable--var-lib-etcd --pod-network-cidr=10.244.0.0/16
+sudo kubeadm init  --control-plane-endpoint 192.168.35.10  --pod-network-cidr=10.244.0.0/16
 ```
+
 - For flannel to work correctly, you must pass --pod-network-cidr=10.244.0.0/16 to kubeadm init.
 Result Screen:
 
@@ -378,7 +406,7 @@ Result Screen:
 sudo systemctl status kubelet.service
 ```
 
-> Note: Regenerate
+- Note: Regenerate again when everv you want to create join string
 ```
 sudo kubeadm token create --print-join-command
 sudo kubeadm token create --print-join-command  > kubeadm_join_cmd.sh
@@ -387,7 +415,7 @@ To start using your cluster, you need to run the following as a regular user:
 
 
 **Step-13 Allow vagrant user to run kubectl commands**
-- Use kubectl below
+- Use kubectl below with sudo 
 ```
 sudo kubectl --kubeconfig /etc/kubernetes/admin.conf get nodes
 NAME            STATUS     ROLES           AGE     VERSION
@@ -395,26 +423,28 @@ k8s-master-01   NotReady   control-plane   4m15s   v1.28.13
 
 ```
 
-- Run as vagrant use or normal user
+- Run as vagrant use or normal user. we need to copy file admin.conf to vagrant use,,
+by run command
 ```
   mkdir -p $HOME/.kube
-  sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-  sudo chown $(id -u vagrant):$(id -g vagrant) $HOME/.kube/config
+  sudo cp -i /etc/kubernetes/admin.conf /home/vagrant/.kube/config
+  sudo chown $(id -u vagrant):$(id -g vagrant) /home/vagrant/.kube/config
 ```
 
-- Test
+- Test get nodes (server) 
 ```
-$ kubectl  get nodes
+$ kubectl  get nodes 
 NAME            STATUS     ROLES           AGE     VERSION
 k8s-master-01   NotReady   control-plane   7m20s   v1.28.13
 ```
 
 Alternatively, if you are the root user, you can run:
 
-**Step-14 Install Pod network flannel**
+**Step-14 Install Pod network flannel**  
+after install control plan, we need to install network plugin flannel
 ```
-$ export KUBECONFIG=$HOME/.kube/config
-$ sudo kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
+$ kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+
 
 namespace/kube-flannel created
 serviceaccount/flannel created
@@ -425,20 +455,17 @@ daemonset.apps/kube-flannel-ds created
 
 ```
 
+
 **Step-15 Check master node after add flannel**
-```
-$ sudo kubectl --kubeconfig /etc/kubernetes/admin.conf get nodes
-NAME            STATUS   ROLES           AGE   VERSION
-k8s-master-01   Ready    control-plane   11m   v1.28.13
-```
 
 ```
-$ kubectl  get nodes
-NAME            STATUS   ROLES           AGE     VERSION
-k8s-master-01   Ready    control-plane   34m     v1.28.13
+[vagrant@k8s-master-01 ~]$ kubectl get daemonset kube-flannel-ds -n kube-flannel
+NAME              DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR   AGE
+kube-flannel-ds   4         4         1       4            1           <none>          5m23s
 ```
 
-### Add more control plain
+## In Future, you can add more control plain (just for understand) not now
+(this step run in next k8s-master)
 - You can now join any number of control-plane nodes by copying certificate authorities
 and service account keys on each node and then running the following as root:
 
@@ -447,7 +474,7 @@ and service account keys on each node and then running the following as root:
         --discovery-token-ca-cert-hash sha256:dd83a4c4dc1f95f33ccfb705fe1d16aa68f63102b145603ce6c9bc83b3fcad5f \
         --control-plane
 ```
-> Note:
+- add ```--control-plane```  add endof join string
 
 - check /etc/kubenetes with `tree`
 ![](./assets/images/etc_kubenetes.png)
@@ -459,12 +486,12 @@ and service account keys on each node and then running the following as root:
 
 **Step-14 kubeadm join**
 
-- Vagrant ssh to node
+- Vagrant ssh to k8s-node-01 ( Repeat this stop in k8s-node-02, k8s-node-03)
 ```
 $ vagrant ssh k8s-node-01
 ```
 
-- Edit containerd
+- Edit containerd configuration
 ```
 sudo mv /etc/containerd/config.toml  /etc/containerd/config.toml.orgi
 sudo containerd config default | sudo tee /etc/containerd/config.toml
@@ -524,4 +551,101 @@ kube-system    kube-proxy-mvb8q                        1/1     Running          
 kube-system    kube-proxy-nck74                        1/1     Running            0               18m
 kube-system    kube-proxy-vjg78                        1/1     Running            0               10m
 kube-system    kube-scheduler-k8s-master-01            1/1     Running            0               38m
+```
+
+## Delete flannel and reinstall
+```
+[vagrant@k8s-master-01 ~]$ kubectl delete -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+namespace "kube-flannel" deleted
+clusterrole.rbac.authorization.k8s.io "flannel" deleted
+clusterrolebinding.rbac.authorization.k8s.io "flannel" deleted
+serviceaccount "flannel" deleted
+configmap "kube-flannel-cfg" deleted
+daemonset.apps "kube-flannel-ds" deleted
+```
+
+```
+$  wget https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+
+$ vim kube-flannel.yml
+```
+
+```
+      containers:
+      - name: kube-flannel
+        image: docker.io/flannel/flannel:v0.25.6
+        command:
+        - /opt/bin/flanneld
+        args:
+        - --ip-masq
+        - --kube-subnet-mgr
+        - --iface=eth1
+```
+
+```
+kubectl apply -f kube-flannel.yml
+```
+
+```
+[vagrant@k8s-master-01 ~]$ kubectl get pods -A
+NAMESPACE      NAME                                    READY   STATUS             RESTARTS      AGE
+kube-flannel   kube-flannel-ds-99bgg                   0/1     Error              1 (10s ago)   13s
+kube-flannel   kube-flannel-ds-btqtq                   1/1     Running            0             13s
+kube-flannel   kube-flannel-ds-kx9r9                   0/1     Error              1 (10s ago)   13s
+kube-flannel   kube-flannel-ds-sbbqs                   0/1     CrashLoopBackOff   1 (9s ago)    13s
+kube-system    coredns-5dd5756b68-hdmj9                1/1     Running            0             69m
+kube-system    coredns-5dd5756b68-ljd7q                1/1     Running            0             69m
+kube-system    etcd-k8s-master-01                      1/1     Running            0             70m
+kube-system    kube-apiserver-k8s-master-01            1/1     Running            0             70m
+kube-system    kube-controller-manager-k8s-master-01   1/1     Running            0             70m
+kube-system    kube-proxy-bcl4n                        1/1     Running            0             69m
+kube-system    kube-proxy-jh4vg                        1/1     Running            0             60m
+kube-system    kube-proxy-jm8l2                        1/1     Running            0             61m
+kube-system    kube-proxy-lw2p6                        1/1     Running            0             61m
+kube-system    kube-scheduler-k8s-master-01            1/1     Running            0             70m
+```
+
+- Get Descript
+```
+[vagrant@k8s-master-01 ~]$ kubectl describe pod -n kube-flannel kube-flannel-ds-kx9r9
+```
+
+- Get log of pod of kube-flannel-ds which Error CrashLoopBackOff
+
+```
+[vagrant@k8s-master-01 ~]$ kubectl logs -n kube-flannel kube-flannel-ds-kx9r9
+```
+
+![](./assets/images/flannel-log-crashloopbackoff.png)
+
+- Restart Flannel
+```
+$ kubectl delete pod -n kube-flannel -l app=flannel
+$ kubectl get pods --all-namespaces 
+```
+
+
+```
+cat <<EOF   | sudo tee -a /etc/sysctl.conf
+net.bridge.bridge-nf-call-iptables=1
+EOF
+
+[vagrant@k8s-master-01 ~]$ sudo tree  /var/lib/cni/
+/var/lib/cni/
+├── flannel
+│   ├── cd2c2f5df03796725f879413789de71d5ec870980fcc78dbade54377a4d9d454
+│   └── fed360a9e9a7c6931fbb7a39608d88f8b093323a73df2741a6ca23e3cb0975de
+├── networks
+│   └── cbr0
+│       ├── 10.244.0.2
+│       ├── 10.244.0.3
+│       ├── last_reserved_ip.0
+│       └── lock
+└── results
+    ├── cbr0-cd2c2f5df03796725f879413789de71d5ec870980fcc78dbade54377a4d9d454-eth0
+    ├── cbr0-fed360a9e9a7c6931fbb7a39608d88f8b093323a73df2741a6ca23e3cb0975de-eth0
+    ├── cni-loopback-cd2c2f5df03796725f879413789de71d5ec870980fcc78dbade54377a4d9d454-lo
+    └── cni-loopback-fed360a9e9a7c6931fbb7a39608d88f8b093323a73df2741a6ca23e3cb0975de-lo
+
+4 directories, 10 files
 ```

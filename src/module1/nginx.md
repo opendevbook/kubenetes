@@ -494,11 +494,12 @@ node "k8s-node-02" deleted
 node "k8s-node-03" deleted
 ```
 
+- Get join string from master
 ```
  kubeadm token create --print-join-command
 ```
 
-
+- Run step below to rejoin worker node
 ```
 [vagrant@k8s-node-01 ~]$ sudo systemctl stop kubelet.service
 [vagrant@k8s-node-01 ~]$ sudo rm -rf /etc/kubernetes/kubelet.conf
@@ -507,10 +508,10 @@ node "k8s-node-03" deleted
 ```
 
 
+>
+## Change inter ip from eth0 to eth1 of each node
 
-## Change inter ip
-
-- Check node internal ip
+- we can Check node internal ip for each node
 ```
 [vagrant@k8s-master-01 ~]$ kubectl get nodes -o wide
 NAME            STATUS   ROLES           AGE     VERSION    INTERNAL-IP   EXTERNAL-IP   OS-IMAGE          KERNEL-VERSION          CONTAINER-RUNTIME
@@ -519,8 +520,7 @@ k8s-node-01     Ready    <none>          13m     v1.28.13   10.0.2.15     <none>
 k8s-node-02     Ready    <none>          11m     v1.28.13   10.0.2.15     <none>        CentOS Stream 9   5.14.0-503.el9.x86_64   containerd://1.7.21
 k8s-node-03     Ready    <none>          11m     v1.28.13   10.0.2.15     <none>        CentOS Stream 9   5.14.0-503.el9.x86_64   containerd://1.7.21
 ```
-
-- Edit file ``` /etc/sysconfig/kubelet```
+- we will change ```INTERNAL-IP``` to ip of eth1. Edit file ``` /etc/sysconfig/kubelet```
 ```
 [vagrant@k8s-master-01 ~]$  sudo vim /etc/sysconfig/kubelet
 ```
@@ -545,18 +545,6 @@ k8s-node-02     Ready    <none>          18m     v1.28.13   10.0.2.15       <non
 k8s-node-03     Ready    <none>          17m     v1.28.13   10.0.2.15       <none>        CentOS Stream 9   5.14.0-503.el9.x86_64   containerd://1.7.21
 ```
 
-### Drain and Remove the Node from cluster
-- Delete
-```
-[vagrant@k8s-master-01 ~]$ kubectl delete nodes k8s-node-01
-[vagrant@k8s-master-01 ~]$ kubectl delete nodes k8s-node-02
-[vagrant@k8s-master-01 ~]$ kubectl delete nodes k8s-node-03
-
-[vagrant@k8s-master-01 ~]$ kubeadm token create --print-join-command
-kubeadm join 192.168.35.10:6443 --token kmh8s9.xxx798maqp67bthp --discovery-token-ca-cert-hash sha256:d0ab73def1046c2472f835e1d1c870095845964e2a22816a1dd3d38214208cbe
-```
-
-
 ### Rejoin node Go to ```k8s-node-01```
 
 - Edit config
@@ -564,87 +552,25 @@ kubeadm join 192.168.35.10:6443 --token kmh8s9.xxx798maqp67bthp --discovery-toke
 [vagrant@k8s-node-01 ~]$ sudo vim /etc/sysconfig/kubelet
 KUBELET_EXTRA_ARGS='--node-ip 192.168.35.21'
 ```
-- rejoin
-```
-[vagrant@k8s-node-01 ~]$ sudo systemctl stop kubelet.service
-[vagrant@k8s-node-01 ~]$ sudo rm -rf /etc/kubernetes/kubelet.conf
-[vagrant@k8s-node-01 ~]$ sudo rm -rf /etc/kubernetes/pki/ca.crt 
 
-[vagrant@k8s-node-01 ~]$ sudo kubeadm join 192.168.35.10:6443 --token kmh8s9.xxx798maqp67bthp --discovery-token-ca-cert-hash sha256:d0ab73def1046c2472f835e1d1c870095845964e2a22816a1dd3d38214208cbe
-```
-Result:
-```
-[preflight] Running pre-flight checks
-[preflight] Reading configuration from the cluster...
-[preflight] FYI: You can look at this config file with 'kubectl -n kube-system get cm kubeadm-config -o yaml'
-[kubelet-start] Writing kubelet configuration to file "/var/lib/kubelet/config.yaml"
-[kubelet-start] Writing kubelet environment file with flags to file "/var/lib/kubelet/kubeadm-flags.env"
-[kubelet-start] Starting the kubelet
-[kubelet-start] Waiting for the kubelet to perform the TLS Bootstrap...
-
-This node has joined the cluster:
-* Certificate signing request was sent to apiserver and a response was received.
-* The Kubelet was informed of the new secure connection details.
-
-Run 'kubectl get nodes' on the control-plane to see this node join the cluster.
-```
-
-
-- Check in ```k8s-master-01```
-```
-[vagrant@k8s-master-01 ~]$ kubectl get nodes -o wide
-NAME            STATUS   ROLES           AGE     VERSION    INTERNAL-IP     EXTERNAL-IP   OS-IMAGE          KERNEL-VERSION          CONTAINER-RUNTIME
-k8s-master-01   Ready    control-plane   6d20h   v1.28.13   192.168.35.10   <none>        CentOS Stream 9   5.14.0-503.el9.x86_64   containerd://1.7.21
-k8s-node-01     Ready    <none>          7s      v1.28.13   192.168.35.21   <none>        CentOS Stream 9   5.14.0-503.el9.x86_64   containerd://1.7.21
-```
-
-### Rejoin node Go to ```k8s-node-02```
-
-- Edit config
 ```
 [vagrant@k8s-node-02 ~]$ sudo vim /etc/sysconfig/kubelet
 KUBELET_EXTRA_ARGS='--node-ip 192.168.35.22'
 ```
-- rejoin
-```
-[vagrant@k8s-node-02 ~]$ sudo systemctl stop kubelet.service
-[vagrant@k8s-node-02 ~]$ sudo rm -rf /etc/kubernetes/kubelet.conf
-[vagrant@k8s-node-02 ~]$ sudo rm -rf /etc/kubernetes/pki/ca.crt 
 
-[vagrant@k8s-node-01 ~]$ sudo kubeadm join 192.168.35.10:6443 --token kmh8s9.xxx798maqp67bthp --discovery-token-ca-cert-hash sha256:d0ab73def1046c2472f835e1d1c870095845964e2a22816a1dd3d38214208cbe
-```
-
-- Check in ```k8s-master-01```
-```
-[vagrant@k8s-master-01 ~]$ kubectl get nodes -o wide
-NAME            STATUS   ROLES           AGE     VERSION    INTERNAL-IP     EXTERNAL-IP   OS-IMAGE          KERNEL-VERSION          CONTAINER-RUNTIME
-k8s-master-01   Ready    control-plane   6d20h   v1.28.13   192.168.35.10   <none>        CentOS Stream 9   5.14.0-503.el9.x86_64   containerd://1.7.21
-k8s-node-01     Ready    <none>          5m29s   v1.28.13   192.168.35.21   <none>        CentOS Stream 9   5.14.0-503.el9.x86_64   containerd://1.7.21
-k8s-node-02     Ready    <none>          6s      v1.28.13   192.168.35.22   <none>        CentOS Stream 9   5.14.0-503.el9.x86_64   containerd://1.7.21
-```
-
-### Rejoin node Go to ```k8s-node-03```
-
-- Edit config
 ```
 [vagrant@k8s-node-03 ~]$ sudo vim /etc/sysconfig/kubelet
-KUBELET_EXTRA_ARGS='--node-ip 192.168.35.22'
-```
-- rejoin
-```
-[vagrant@k8s-node-03 ~]$ sudo systemctl stop kubelet.service
-[vagrant@k8s-node-03 ~]$ sudo rm -rf /etc/kubernetes/kubelet.conf
-[vagrant@k8s-node-03 ~]$ sudo rm -rf /etc/kubernetes/pki/ca.crt 
-
-[vagrant@k8s-node-01 ~]$ sudo kubeadm join 192.168.35.10:6443 --token kmh8s9.xxx798maqp67bthp --discovery-token-ca-cert-hash sha256:d0ab73def1046c2472f835e1d1c870095845964e2a22816a1dd3d38214208cbe
+KUBELET_EXTRA_ARGS='--node-ip 192.168.35.23'
 ```
 
-- Check in ```k8s-master-01```
+Check result
 ```
 [vagrant@k8s-master-01 ~]$ kubectl get nodes -o wide
-NAME            STATUS   ROLES           AGE     VERSION    INTERNAL-IP     EXTERNAL-IP   OS-IMAGE          KERNEL-VERSION          CONTAINER-RUNTIME
-k8s-master-01   Ready    control-plane   6d20h   v1.28.13   192.168.35.10   <none>        CentOS Stream 9   5.14.0-503.el9.x86_64   containerd://1.7.21
-k8s-node-01     Ready    <none>          7m59s   v1.28.13   192.168.35.21   <none>        CentOS Stream 9   5.14.0-503.el9.x86_64   containerd://1.7.21
-k8s-node-02     Ready    <none>          2m36s   v1.28.13   192.168.35.22   <none>        CentOS Stream 9   5.14.0-503.el9.x86_64   containerd://1.7.21
-k8s-node-03     Ready    <none>          6s      v1.28.13   192.168.35.23   <none>        CentOS Stream 9   5.14.0-503.el9.x86_64   containerd://1.7.21
+NAME            STATUS   ROLES           AGE   VERSION    INTERNAL-IP     EXTERNAL-IP   OS-IMAGE          KERNEL-VERSION          CONTAINER-RUNTIME
+k8s-master-01   Ready    control-plane   42m   v1.28.13   192.168.35.10   <none>        CentOS Stream 9   5.14.0-391.el9.x86_64   containerd://1.7.21
+k8s-node-01     Ready    <none>          33m   v1.28.13   192.168.35.21   <none>        CentOS Stream 9   5.14.0-391.el9.x86_64   containerd://1.7.21
+k8s-node-02     Ready    <none>          33m   v1.28.13   192.168.35.22   <none>        CentOS Stream 9   5.14.0-391.el9.x86_64   containerd://1.7.21
+k8s-node-03     Ready    <none>          32m   v1.28.13   192.168.35.23   <none>        CentOS Stream 9   5.14.0-391.el9.x86_64   containerd://1.7.21
 ```
+>
+
