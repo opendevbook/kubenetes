@@ -44,7 +44,7 @@ EOF
     sudo sysctl --system
  
     # Load kernel module
-cat <<EOF | sudo /etc/modules-load.d/k8s.conf 
+cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf 
 overlay
 br_netfilter
 ip_vs
