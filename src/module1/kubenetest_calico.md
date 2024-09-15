@@ -16,31 +16,31 @@ vagrantfile
 $base=<<-SCRIPT
     echo ">>> Run Kubernetes Base script"
     echo "-----------------------------------------------"
+    echo "\nStep-1 Enable ssh password authentication"
     echo $(whoami)
     sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config    
     systemctl restart sshd.service
+    echo "\nStep-2 Enable firewall"
     sudo dnf update -y
     sudo dnf install -y firewalld socat
     sudo systemctl enable --now firewalld
 
-    # Disable Selinux
+    # Step-3 Disable SELinux
+    echo "\nStep-3 Disable SELinux"
     sudo setenforce 0
     sudo sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
 
 
-
-    # use iptables-legacy 
-    # sudo dnf --enablerepo=epel -y install iptables-legacy
-    # sudo alternatives --set iptables /usr/sbin/iptables-legacy
-    # alternatives --set ip6tables /usr/sbin/ip6tables-legacy
-
-    # Enable kernel network
+    # Step-4 manage kernel module
+    echo "\nStep-4 manage kernel module"
 cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
 net.ipv4.ip_forward = 1
 net.bridge.bridge-nf-call-ip6tables = 1
 net.bridge.bridge-nf-call-iptables = 1
 EOF
 
+    sudo "show sysctl -p"
+    sudo sysctl -p
     sudo sysctl --system
  
     # Load kernel module
@@ -58,16 +58,14 @@ EOF
     sudo modprobe ip_vs_wrr
     sudo modprobe ip_vs_sh
     sudo modprobe overlay
-    
-    # Apply change sysctl parametr
-    sudo sysctl --system
 
-    # Disable Swap
+    # Step-5: Disable swap permanently
+    echo "\nStep-5: Disable swap permanently"
     sudo swapoff -a
     sudo sed -e '/swap/s/^/#/g' -i /etc/fstab
 
-    # Enable Firewall
-    sudo firewall-cmd --zone=public --permanent --add-port={6443,2379,2380,10250,10251,10252}/tcp
+    # Step-6: Enable Enable firewall port
+    echo "\nStep-6: Enable Enable firewall port"
     sudo firewall-cmd --zone=public --permanent --add-port=443/tcp
     sudo firewall-cmd --zone=public --permanent --add-port=6443/tcp
     sudo firewall-cmd --zone=public --permanent --add-port=2379-2380/tcp
@@ -85,19 +83,9 @@ EOF
     sudo firewall-cmd --reload
 
     
-    # install containerd daemon
-    sudo dnf install -y containerd.io
-    sudo systemctl enable --now containerd
+    # Step-7: Enable Hostname
 
-
-cat <<EOF   | sudo tee -a /etc/sysctl.conf
-net.bridge.bridge-nf-call-iptables=1
-EOF
-    sudo "show sysctl -p"
-    sudo sysctl -p
-
-
-    #echo /etc/hosts
+    echo "Step7 Enable Hostname"
 cat <<EOF | sudo tee /etc/hosts
 127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
 ::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
@@ -110,16 +98,14 @@ cat <<EOF | sudo tee /etc/hosts
 192.168.35.23  k8s-node-03  k8s-node-03
 EOF
 
-    sudo setenforce 0
-    sed -i --follow-symlinks 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/sysconfig/selinux
 SCRIPT
 
 
 $node_crio=<<-SCRIPT
     echo ">>> Run Kubernetes node script"
     echo "-----------------------------------------------"
-    echo ""
-    # Install docker engine
+    echo "\nStep1 Install crio engine"
+    # Install crio engine
 cat <<EOF | sudo tee /etc/yum.repos.d/crio.repo 
 [cri-o]
 name=CRI-O
@@ -134,6 +120,7 @@ EOF
     sudo journalctl -u crio
 
     # Install kubenetest
+    echo "\nStep2 Install kubenetest"
 cat <<EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
 [kubernetes]
 name=Kubernetes
@@ -151,6 +138,7 @@ EOF
     echo "\nRun command: sudo systemctl status kubelet"
     sudo systemctl status kubelet
 
+    # Enable Bash completion for kubernetes command
     source <(kubectl completion bash)
     sudo kubectl completion bash | sudo tee  /etc/bash_completion.d/kubectl
 SCRIPT
@@ -158,7 +146,7 @@ SCRIPT
 $node_containerd=<<-SCRIPT
     echo ">>> Run Kubernetes node script"
     echo "-----------------------------------------------"
-    echo ""
+    echo "\nStep1 Install containerd engine"
     # Install docker engine
     sudo dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
     sudo dnf install -y docker-ce docker-ce-cli containerd.io
@@ -170,6 +158,7 @@ $node_containerd=<<-SCRIPT
     sudo systemctl enable --now containerd
 
     # Install kubenetest
+    echo "\nStep2 Install kubenetest"
 cat <<EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
 [kubernetes]
 name=Kubernetes
@@ -190,12 +179,16 @@ EOF
     source <(kubectl completion bash)
     sudo kubectl completion bash | sudo tee  /etc/bash_completion.d/kubectl
 
+    echo "\nStep3 Config containerd with systemdCroup"
     sudo mv /etc/containerd/config.toml  /etc/containerd/config.toml.orgi
     sudo containerd config default | sudo tee /etc/containerd/config.toml
     sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/g' /etc/containerd/config.toml
    
     sudo systemctl restart containerd   
     sudo systemctl status containerd.service
+    echo "\mStep4 Test pull and run image"
+    sudo ctr image pull docker.io/library/hello-world:latest
+    sudo ctr run --rm docker.io/library/hello-world:latest test
 SCRIPT
 
 Vagrant.configure("2") do |config|
@@ -251,6 +244,8 @@ Vagrant.configure("2") do |config|
   end
 
   #config.vm.synced_folder ".", "/vagrant"
+
+
   
 end
 
