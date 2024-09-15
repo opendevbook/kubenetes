@@ -1,7 +1,8 @@
 # Summary
 
 # Create kubernetes Cluster 3 node
-- [Vagrantfile & Create kube cluster](./chapter_1.md)
+- [kubernetes + flannel](./module1/kubenetest_flannel.md)
+- [kubernetes + calico](./module1/kubenetest_calico.md)
 - [Deploy first deployment](./module1/first_deployment.md)
 
 # Reset Cluster
