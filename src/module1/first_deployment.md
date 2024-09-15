@@ -45,43 +45,6 @@ deployment.apps/nginx-deployment created
 kubectl describe deployment nginx-deployment
 ```
 
-Result:
-```
-Name:                   nginx-deployment
-Namespace:              default
-CreationTimestamp:      Mon, 09 Sep 2024 14:25:12 +0000
-Labels:                 <none>
-Annotations:            deployment.kubernetes.io/revision: 1
-Selector:               app=nginx
-Replicas:               2 desired | 2 updated | 2 total | 0 available | 2 unavailable
-StrategyType:           RollingUpdate
-MinReadySeconds:        0
-RollingUpdateStrategy:  25% max unavailable, 25% max surge
-Pod Template:
-  Labels:  app=nginx
-  Containers:
-   nginx:
-    Image:        nginx:1.14.2
-    Port:         80/TCP
-    Host Port:    0/TCP
-    Environment:  <none>
-    Mounts:       <none>
-  Volumes:        <none>
-Conditions:
-  Type           Status  Reason
-  ----           ------  ------
-  Available      False   MinimumReplicasUnavailable
-  Progressing    True    ReplicaSetUpdated
-OldReplicaSets:  <none>
-NewReplicaSet:   nginx-deployment-86dcfdf4c6 (2/2 replicas created)
-Events:
-  Type    Reason             Age   From                   Message
-  ----    ------             ----  ----                   -------
-  Normal  ScalingReplicaSet  43s   deployment-controller  Scaled up replica set nginx-deployment-86dcfdf4c6 to 2
-```
-
-
-
 ![](../assets/images/first_deploy2.png)
 
 Run ```kubectl get deployments``` to check if the Deployment was created.
@@ -90,8 +53,6 @@ If the Deployment is still being created, the output is similar to the following
 
 ```
 [vagrant@k8s-master-01 controller]$ kubectl get deployments
-NAME               READY   UP-TO-DATE   AVAILABLE   AGE
-nginx-deployment   0/2     2            0           7m12s
 ```
 
 
@@ -109,9 +70,6 @@ When you inspect the Deployments in your cluster, the following fields are displ
 
 ```
 [vagrant@k8s-master-01 controller]$ kubectl get rs
-NAME                          DESIRED   CURRENT   READY   AGE
-nginx-deployment-86dcfdf4c6   2         2         0       7m44s
-
 ```
 
 ReplicaSet output shows the following fields:
@@ -126,9 +84,7 @@ ReplicaSet output shows the following fields:
 
 ```
 [vagrant@k8s-master-01 controller]$ kubectl get pods --show-labels
-NAME                                READY   STATUS              RESTARTS   AGE     LABELS
-nginx-deployment-86dcfdf4c6-lpwjv   0/1     ContainerCreating   0          8m14s   app=nginx,pod-template-hash=86dcfdf4c6
-nginx-deployment-86dcfdf4c6-n8qgn   0/1     ContainerCreating   0          8m14s   app=nginx,pod-template-hash=86dcfdf4c6
+
 ```
 
 
@@ -136,17 +92,12 @@ nginx-deployment-86dcfdf4c6-n8qgn   0/1     ContainerCreating   0          8m14s
 -Running get pods should now show only the new Pods  ```kubctl get pods```
 ```
 [vagrant@k8s-master-01 controller]$ kubectl get pods 
-NAME                                READY   STATUS              RESTARTS   AGE
-nginx-deployment-86dcfdf4c6-lpwjv   0/1     ContainerCreating   0          8m46s
-nginx-deployment-86dcfdf4c6-n8qgn   0/1     ContainerCreating   0          8m46s
 ```
 
 - To see network  run ```kubectl get services```
 
 ```
 [vagrant@k8s-master-01 ~]$ kubectl get services
-NAME         TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
-kubernetes   ClusterIP   10.96.0.1    <none>        443/TCP   22h
 ```
 
 - Delete deployment

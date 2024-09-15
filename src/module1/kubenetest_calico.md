@@ -288,6 +288,7 @@ after run script then we install kubernetests with ```kubeamd init``` and select
 ### Snapshot technic will help you to setup clean point
 ![](../assets/images/vagrant_snapshot2.png)
 - When we creat snapshot hypervisor will write change in to new files, and when we restore snapshot. hypervision will quickly discard change and get back to when we created our snapshot 
+- Snapshots provides a method to lock virtual machine data
 - After create snapshot we restore snapshot and continue to work
 ```
 > vagrant snapshot restore origin_state1

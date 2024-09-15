@@ -111,20 +111,10 @@ Verify
 ```
 [vagrant@k8s-master-01 basic]$ kubectl get deployments -n my-lab
 
-nginx-deployment   0/3     3            0           8s
-
 [vagrant@k8s-master-01 basic]$ kubectl get pods -n my-lab
-
-NAME                                READY   STATUS              RESTARTS   AGE
-nginx-deployment-6b8f6d655f-mctfg   0/1     ContainerCreating   0          28s
-nginx-deployment-6b8f6d655f-qd6sq   0/1     ContainerCreating   0          28s
-nginx-deployment-6b8f6d655f-qqnkv   0/1     ContainerCreating   0          28s
 
 ```
 
-![](../assets/images/basic_nginx_deploy.png)
-
-![](../assets/images/get_pods_all_space.png)
 **Step 4. Expose the Nginx Application**
 Create a Service to expose the Nginx application.
 
@@ -160,8 +150,6 @@ service/nginx-service created
 Check the service:  ```kubectl get services -n my-lab```
 ```
 [vagrant@k8s-master-01 basic]$ kubectl get services -n my-lab
-NAME            TYPE       CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE
-nginx-service   NodePort   10.100.135.221   <none>        80:32707/TCP   11s
 ```
 
 - 4.3 Access the Nginx Application
@@ -187,12 +175,6 @@ deployment.apps/nginx-deployment scaled
 
 ```
 [vagrant@k8s-master-01 basic]$ kubectl get pods -n my-lab
-NAME                                READY   STATUS              RESTARTS   AGE
-nginx-deployment-6b8f6d655f-7k48j   0/1     ContainerCreating   0          10s
-nginx-deployment-6b8f6d655f-98fbq   0/1     ContainerCreating   0          10s
-nginx-deployment-6b8f6d655f-phlk9   0/1     ContainerCreating   0          6m45s
-nginx-deployment-6b8f6d655f-w7w59   0/1     ContainerCreating   0          6m45s
-nginx-deployment-6b8f6d655f-zcj9p   0/1     ContainerCreating   0          6m45s
 ```
 
 **Step 6. View Nginx Logs**

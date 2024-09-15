@@ -10,7 +10,5 @@
 
 # Deployment
 - [Basic Deployment ](./module1/basicdeployment.md)
-- [nginx & Fix Flannel network](./module1/nginx.md)
-
 - [Wordpress deployment](./module1/wordpress.md)
 

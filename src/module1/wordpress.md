@@ -203,43 +203,29 @@ deployment.apps/wordpress-mysql created
 - get deployment ```kubectl get deployments```
 ```
 [vagrant@k8s-master-01 wordpress]$ kubectl get deployments
-NAME               READY   UP-TO-DATE   AVAILABLE   AGE
-...
-wordpress          0/1     1            0           7m49s
-wordpress-mysql    0/1     1            0           7m49s
 ```
 
 ## Verify  
 - Verify that the Secret exists by running the following command:  ```kubectl get secrets```
 ```
 [vagrant@k8s-master-01 wordpress]$ kubectl get secrets
-NAME                    TYPE     DATA   AGE
-mysql-pass-5m26tmdb5k   Opaque   1      20s
 ```
 
 - Verify that a PersistentVolume got dynamically provisioned. ```kubectl get pvc```
 ```
 [vagrant@k8s-master-01 wordpress]$ kubectl get pvc
 NAME             STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   AGE
-mysql-pv-claim   Pending                                                     105s
-wp-pv-claim      Pending                                                     105s
 ```
 
 - Verify that the Pod is running by running the following command: ```kubectl get pods```
 ```
 [vagrant@k8s-master-01 wordpress]$  kubectl get pods
 
-NAME                                READY   STATUS              RESTARTS   AGE
-...
-wordpress-777799f8bb-ndh97          0/1     Pending             0          2m24s
-wordpress-mysql-7d6467b97-pzhn9     0/1     Pending             0          2m24s
 ```
 
 - Verify Service wordpress ```kubectl get services wordpress```
 ```
 [vagrant@k8s-master-01 wordpress]$ kubectl get services wordpress
-NAME        TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
-wordpress   LoadBalancer   10.100.42.138   <pending>     80:31350/TCP   3m10s
 ```
 
 - Verify All service ```kubectl describe service```
