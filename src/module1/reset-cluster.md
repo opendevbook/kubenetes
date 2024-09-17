@@ -78,7 +78,10 @@
 ```
 
 ```
-[vagrant@k8s-master-01 ]$ sudo kubeadm init  --control-plane-endpoint 192.168.35.10  --pod-network-cidr=10.244.0.0/16
+$ sudo kubeadm init \
+  --control-plane-endpoint=192.168.35.10 \
+  --pod-network-cidr=10.244.0.0/16 \
+  --apiserver-advertise-address=192.168.35.10
 ```
 ![](../assets/images/kube-newinstall.png)
 
