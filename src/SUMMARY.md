@@ -15,3 +15,4 @@
 - [Basic Deployment + NodePort ](./module1/basicdeployment.md)
 - [ClusterIP Network](./module1/clusterip.md)
 - [NodePort + Loadbalance](./module1/kubenetwork_nginx.md)
+- [Kubenetes Dashboard](./module1/dashbaord.md)

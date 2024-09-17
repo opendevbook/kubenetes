@@ -1,0 +1,129 @@
+# Kubenetes Dashboard
+
+![](../assets/images/9_dashboard.png)
+
+**1. Deploy the Kubernetes Dashboard**
+Run the following command to install the official Kubernetes Dashboard:
+
+```
+$ kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
+```
+![](../assets/images/9_apply_dashboard.png)
+
+This command installs the latest stable version of the Kubernetes Dashboard and creates all the necessary resources like the ```kubernetes-dashboard service```, deployment, and necessary RBAC (Role-Based Access Control) permissions.
+
+**2. Create a Service Account and ClusterRoleBinding**
+You need a service account with proper permissions to access the dashboard. You can create an admin user with this command:
+```
+$ kubectl create serviceaccount dashboard-admin-sa -n kubernetes-dashboard
+
+$ kubectl create clusterrolebinding dashboard-admin-sa \
+  --clusterrole=cluster-admin \
+  --serviceaccount=kubernetes-dashboard:dashboard-admin-sa
+
+```
+
+![](../assets/images/9_create_admin_sa.png)
+
+Verify account
+```
+$ kubectl get sa -n  kubernetes-dashboard
+$ kubectl get sa/dashboard-admin-sa -n kubernetes-dashboard
+```
+![](../assets/images/9_verify_admin_sa.png)
+
+**3.  Create a Secret for the Service Account**
+Run the following command to create a secret with a token for the dashboard-admin-sa service account:
+```
+$ kubectl create token dashboard-admin-sa -n kubernetes-dashboard
+```
+![](../assets/images/9_create_secret.png)
+
+```
+$ kubectl get secrets -n kubernetes-dashboard
+```
+![](../assets/images/9_get_secret.png)
+
+**4.  Verify the Token**
+If you still need to create a secret token manually (for versions where kubectl create token isn't available), you can do it with the following steps:
+
+Create a Secret:
+```
+cat <<EOF | tee dashboard-admin-sa-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dashboard-admin-sa-token
+  namespace: kubernetes-dashboard
+  annotations:
+    kubernetes.io/service-account.name: "dashboard-admin-sa"
+type: kubernetes.io/service-account-token
+EOF
+```
+Apply:
+```
+$ kubectl apply -f dashboard-admin-sa-secret.yaml
+```
+
+Retrieve the Token:
+```
+$ kubectl describe secret dashboard-admin-sa-token -n kubernetes-dashboard
+```
+
+![](../assets/images/9_create_token.png)
+In the output, look for the token field, which will contain the bearer token for logging into the Kubernetes dashboard.
+
+
+
+**5. Access the Dashboard**
+The Kubernetes Dashboard is not exposed on an external IP by default for security reasons. You can access it via kubectl proxy:
+```
+$ kubectl proxy
+Starting to serve on 127.0.0.1:8001
+```
+
+This command allows you to access the dashboard at the following URL:
+```
+http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/
+```
+
+**7 login to Dashboard**
+- Open a browser and go to the URL from step 4.
+- Choose the Token option for login and paste the token you retrieved earlier.
+Optional: Expose the Dashboard Externally
+For testing or easy access, you can expose the dashboard using a NodePort service. Be aware that this exposes your cluster to the public if not properly secured.
+
+To do this:
+```
+$ kubectl edit service kubernetes-dashboard -n kubernetes-dashboard
+```
+![](../assets/images/9_edit_clusterip_to_nodePort.png)
+
+Change the type from ClusterIP to NodePort. 
+![](../assets/images/9_edit_clusterip_to_nodePort2.png)
+Then, access the dashboard at:
+
+Check nodeport:  
+```
+$ kubectl get svc -n kubernetes-dashboard
+```
+![](../assets/images/9_getnodeport_dashboard.png)
+This will show all the services in the kubernetes-dashboard namespace. Look for the service of type NodePort, and under the PORT(S) column, you will see something like 443:XXXXX/TCP, where XXXXX is the NodePort assigned.  
+For more detailed information, including all port mappings, run:
+```
+$ kubectl describe svc kubernetes-dashboard -n kubernetes-dashboard
+```
+![](../assets/images/9_describe_nodeport.png)
+
+This will show you the NodePort under the Port section in the output, like this:
+```
+Type:                     NodePort
+Port:                     <Service_Port>  443/TCP
+NodePort:                 <NodePort_Assigned>  <XXXXX>/TCP
+
+```
+
+You can then access the Kubernetes Dashboard using:
+```
+https://<Node_IP>:<NodePort_Assigned>
+```
