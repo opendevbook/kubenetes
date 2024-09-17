@@ -32,6 +32,10 @@ $ kubectl get sa/dashboard-admin-sa -n kubernetes-dashboard
 ```
 ![](../assets/images/9_verify_admin_sa.png)
 
+or use ```kubectl patch``
+```
+kubectl patch svc kubernetes-dashboard -n kubernetes-dashboard -p '{"spec":{"type":"NodePort"}}'
+```
 **3.  Create a Secret for the Service Account**
 Run the following command to create a secret with a token for the dashboard-admin-sa service account:
 ```
@@ -123,7 +127,56 @@ NodePort:                 <NodePort_Assigned>  <XXXXX>/TCP
 
 ```
 
-You can then access the Kubernetes Dashboard using:
+You can then access the Kubernetes Dashboard using: ```https://<Node_IP>:<NodePort_Assigned>```
 ```
-https://<Node_IP>:<NodePort_Assigned>
+https://192.168.35.21:32088/
 ```
+
+**Steps to Change the NodePort** (options)
+
+1. Edit the Service and Set NodePort Manually
+
+You can manually edit the service to ensure that a NodePort is set. Run the following command to edit the service:
+
+```
+$ kubectl edit svc kubernetes-dashboard -n kubernetes-dashboard
+```
+![](../assets/images/9_edit_svc_nodeport.png)
+
+**2. Set the NodePort Manaual**
+```
+ports:
+- port: 443
+  targetPort: 8443
+  protocol: TCP
+  nodePort: 32080  # Set the NodePort manually or remove this line to let Kubernetes auto-assign it.
+```
+
+**3 Save the Changes**
+
+After editing, save and close the editor. Kubernetes will automatically apply the changes.
+
+**4 Verify the NodePort**
+
+After applying the changes, verify that the NodePort is correctly set by running:
+
+```
+$ kubectl get svc kubernetes-dashboard -n kubernetes-dashboard
+```
+![](../assets/images/9_access_dashboard.png)
+
+Open browser
+```
+https://192.168.35.21:32080/
+```
+
+![](../assets/images/9_web_dashboard1.png)
+
+
+![](../assets/images/9_web_dashboard2.png)
+copy paste token and click sign in
+```
+eyJhbGciOiJSUzI1NiIsImtpZCI6IkxzempxdmxQTTNydFlhc3hneWZTWVNRTzlWaVAzQnNQemVYOUl3SnRrSm8ifQ.eyJhdWQiOlsiaHR0cHM6Ly9rdWJlcm5ldGVzLmRlZmF1bHQuc3ZjLmNsdXN0ZXIubG9jYWwiXSwiZXhwIjoxNzI2NTU1NjYxLCJpYXQiOjE3MjY1NTIwNjEsImlzcyI6Imh0dHBzOi8va3ViZXJuZXRlcy5kZWZhdWx0LnN2Yy5jbHVzdGVyLmxvY2FsIiwia3ViZXJuZXRlcy5pbyI6eyJuYW1lc3BhY2UiOiJrdWJlcm5ldGVzLWRhc2hib2FyZCIsInNlcnZpY2VhY2NvdW50Ijp7Im5hbWUiOiJkYXNoYm9hcmQtYWRtaW4tc2EiLCJ1aWQiOiIxNTM1YWRlNC05Y2NmLTRjOTQtYWYxZi1jMzQ0MTY5MTQ5MDIifX0sIm5iZiI6MTcyNjU1MjA2MSwic3ViIjoic3lzdGVtOnNlcnZpY2VhY2NvdW50Omt1YmVybmV0ZXMtZGFzaGJvYXJkOmRhc2hib2FyZC1hZG1pbi1zYSJ9.S2iNcL4dLEkQqKDnTZaeCfY_IOUts88WcPd-go18aA2ktB3pp3ASHx7hOzp8AQOYJ3Ysk8fCZgGjRK4mlRs8Tq7sXoNDL-tWecBWfxoO15z5RFMgC882_uBS-_AUB2FVeM41yPIhGnbSJOXbpdntH1fLEgWRf1IzRHS_UuVl6-EvsiC7C7DUzT2Zqa63YF7pSwHnGBo52YsLYYLJzeZk_S7unuA1EfvjISrWkdvyxkGJwCMCjJNMWB3zED08f61iLxlNV2wozMMivwrOBu2mCUd2va66p7jKwkyyw4yTPlmmAplf0AHAEI_VqW45q_MgVXacdpC5kgiyKA7JPHwH1g
+```
+
+![](../assets/images/9_web_dashboard3.png)
