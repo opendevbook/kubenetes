@@ -8,7 +8,10 @@
 # Reset Cluster
 - [Reset Cluster](./module1/reset-cluster.md)
 
-# Deployment
-- [Basic Deployment ](./module1/basicdeployment.md)
+# Week 6 Deployment
 - [Wordpress deployment](./module1/wordpress.md)
 
+# Week 7 Kebernetes Network
+- [Basic Deployment + NodePort ](./module1/basicdeployment.md)
+- [ClusterIP Network](./module1/clusterip.md)
+- [NodePort + Loadbalance](./module1/kubenetwork_nginx.md)

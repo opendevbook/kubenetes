@@ -611,11 +611,12 @@ daemonset.apps/kube-flannel-ds created
 [vagrant@k8s-master-01 ~]$ kubectl get daemonset kube-flannel-ds -n kube-flannel
 ```
 
-### Add Kubernetes node workload to master
-- Then you can``` join any number of worker nodes by running the following on each as root:
+## Add Kubernetes node workload to master
+now our master node is already runing
+- Then you can join any number of worker nodes by running the following on each as root:
 - Run command in k8s-node-01,k8s-node-02,k8s-node-03
 
-**kubeadm join**
+**Now Join Cluster with ```kubeadm join```**
 
 - Vagrant ssh to k8s-node-01 ( Repeat this stop in k8s-node-02, k8s-node-03)
 ```
@@ -630,6 +631,34 @@ sudo kubeadm join 192.168.35.10:6443 --token qe6ayo.xg49osbs08nwddi9 \
 
 > Repeat in k8s-node-02, k8s-node-03
 
-![](./assets/images/kube_addnode.png)
+![](../assets/images/kube_addnode.png)
+
+```
+```
+
+**Verify pods After join Worker node**
+![](../assets/images/kubectl_getpods.png)
 
 
+## Consider to Save State of Cluster
+exit from master node again the stop all node
+```
+[vagrant@k8s-master-01 ~]$ exit
+
+> vagrant halt 
+> vagrant snapshot save origin_state2_cluster
+```
+
+![](../assets/images/vagrant_snapshot3.png)
+
+## Restore Cluster and continue to run mext lab
+- add this point of snapshot is clean kubernetes cluster
+```
+> vagrant snapshot restore origin_state2_cluster
+```
+![](../assets/images/vagrant_snapshot4.png)
+
+## Check kubernetes cluster help
+![](../assets/images/vagrant_snapshot5.png)
+
+[go to > 5 Basic Deployment](./basicdeployment.md)

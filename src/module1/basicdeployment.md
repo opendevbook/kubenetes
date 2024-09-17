@@ -1,4 +1,6 @@
-#  Basic Deployment 
+#  Basic Deployment with NodePort 
+![](../assets/images/6_nodeportintro.png)
+
 ![](../assets/images/logo-kube.jpg)
 
 Beginners
@@ -16,7 +18,8 @@ k8s-node-01     Ready      <none>          9m59s   v1.28.13   192.168.35.21   <n
 k8s-node-02     Ready      <none>          8m16s   v1.28.13   192.168.35.22   <none>        CentOS Stream 9   5.14.0-503.el9.x86_64   containerd://1.7.21
 k8s-node-03     Ready      <none>          7m36s   v1.28.13   192.168.35.23   <none>        CentOS Stream 9   5.14.0-503.el9.x86_64   containerd://1.7.21
 ```
-
+Result output:
+![](../assets/images/5_kubectl_get_node_wide.png)
 
 
 ```
@@ -25,35 +28,10 @@ k8s-node-03     Ready      <none>          7m36s   v1.28.13   192.168.35.23   <n
 
 ![](../assets/images/kubelet-getnodes.png)
 
-```
-[vagrant@k8s-master-01 basic]$ kubectl annotate nodes k8s-master-01 flannel.alpha.coreos.com/public-ip=192.168.35.10 --overwrite
-node/k8s-master-01 annotated
-[vagrant@k8s-master-01 basic]$ kubectl  describe nodes k8s-master-01 
-```
+>
 
-![](../assets/images/kubelet-getnodes-publicip.png)
-
-
-
-- reboot if  ```k8s-master-01   NotReady   control-plane ```
-```
-vagrant halt
-vagrant up k8s-master-01
-vagrant up k8s-node-01
-vagrant up k8s-node-02
-vagrant up k8s-node-03
-```
-
-```
-[vagrant@k8s-master-01 ~]$ kubectl  get nodes -o wide
-NAME            STATUS   ROLES           AGE   VERSION    INTERNAL-IP     EXTERNAL-IP   OS-IMAGE          KERNEL-VERSION          CONTAINER-RUNTIME
-k8s-master-01   Ready    control-plane   40m   v1.28.13   192.168.35.10   <none>        CentOS Stream 9   5.14.0-503.el9.x86_64   containerd://1.7.21
-k8s-node-01     Ready    <none>          22m   v1.28.13   192.168.35.21   <none>        CentOS Stream 9   5.14.0-503.el9.x86_64   containerd://1.7.21
-k8s-node-02     Ready    <none>          20m   v1.28.13   192.168.35.22   <none>        CentOS Stream 9   5.14.0-503.el9.x86_64   containerd://1.7.21
-k8s-node-03     Ready    <none>          20m   v1.28.13   192.168.35.23   <none>        CentOS Stream 9   5.14.0-503.el9.x86_64   containerd://1.7.21
-```
-
-**Prepare folder**
+## Start workshop 5: Basic Deployment
+**Step 1. Prepare folder**
 ```
 cd ~
 mkdir basic
@@ -114,8 +92,10 @@ Verify
 [vagrant@k8s-master-01 basic]$ kubectl get pods -n my-lab
 
 ```
+wait until STATUS is Running
+![](../assets/images/5_get_pod.png)
 
-**Step 4. Expose the Nginx Application**
+**Step 4. Next We Expose the Nginx Application**
 Create a Service to expose the Nginx application.
 
 - 4.1 Create a Service YAML File
@@ -150,7 +130,10 @@ service/nginx-service created
 Check the service:  ```kubectl get services -n my-lab```
 ```
 [vagrant@k8s-master-01 basic]$ kubectl get services -n my-lab
+[vagrant@k8s-master-01 basic]$ kubectl get services -n my-lab -o wide
 ```
+![](../assets/images/5_get_service_nodeport.png)
+
 
 - 4.3 Access the Nginx Application
 Find the NodePort assigned to your service:
@@ -159,11 +142,56 @@ Find the NodePort assigned to your service:
 [vagrant@k8s-master-01 basic]$ kubectl get svc nginx-service -n my-lab
 ```
 
+- From file ```nginx-service.yaml``` port will random select. We will fix nodeport
+```
+[vagrant@k8s-master-01 basic]$ kubectl delete -f nginx-service.yaml
+```
+
+**create nginx-service-nodeport.yaml  fix nodeport 30001**
+```
+cat <<EOF  | tee nginx-service-nodeport.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-nodeport
+  namespace: my-lab
+spec:
+  type: NodePort
+  selector:
+    app: nginx  # Same selector as in the LoadBalancer service
+  ports:
+    - protocol: TCP
+      port: 80         # Service Port
+      targetPort: 80   # Container Port in the nginx pod
+      nodePort: 30001  # NodePort for external access
+EOF
+```
+- apply service
+```
+[vagrant@k8s-master-01 basic]$ kubectl apply -f nginx-service-nodeport.yaml
+```
+
+![](../assets/images/5_get_service_nodeport_30001.png)
+
+- verify ```kubectl get svc```
+```
+[vagrant@k8s-master-01 basic]$ kubectl get svc nginx-nodeport -n my-lab
+[vagrant@k8s-master-01 basic]$ kubectl get svc nginx-nodeport -n my-lab -o wide
+```
+
+![](../assets/images/5_get_service_nodeport_30001_verify.png)
+
+
+
 You can now access Nginx using your node’s IP and the assigned port:
+
+![](../assets/images/5_getpod_list.png)
 
 ```
 http://<node-ip>:<node-port>
 ```
+(try to connect to every node ip)
+![](../assets/images/5_connect_nodeport.png)
 
 **Step 5. Scale the Nginx Deployment**
 You can scale the deployment to run more replicas of Nginx:
@@ -176,23 +204,27 @@ deployment.apps/nginx-deployment scaled
 ```
 [vagrant@k8s-master-01 basic]$ kubectl get pods -n my-lab
 ```
+Result Output:
+![](../assets/images/5_scaledeployment.png)
+
+
 
 **Step 6. View Nginx Logs**
-Check the logs of a specific Nginx pod:
+Check the logs of a specific Nginx pod: ``` kubectl logs <nginx-pod-name> -n my-lab```
 
 ```
-[vagrant@k8s-master-01 basic]$ kubectl logs <nginx-pod-name> -n my-lab
+[vagrant@k8s-master-01 basic]$ kubectl logs nginx-deployment-6b8f6d655f-84b58 -n my-lab
 ```
 
-**Step 7. Delete the Resources**
+**Step 7. Clean up, Delete All Resources**
 Once you're done with the lab, you can delete the resources:
 
 ```
 [vagrant@k8s-master-01 basic]$ kubectl delete deployment nginx-deployment -n my-lab
 deployment.apps "nginx-deployment" deleted
 
-[vagrant@k8s-master-01 basic]$ kubectl delete service nginx-service -n my-lab
-service "nginx-service" deleted
+[vagrant@k8s-master-01 basic]$ kubectl delete service nginx-nodeport -n my-lab
+service "nginx-nodeport" deleted
 
 [vagrant@k8s-master-01 basic]$ kubectl delete namespace my-lab
 namespace "my-lab" deleted
