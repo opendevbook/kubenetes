@@ -135,7 +135,7 @@ You can then access the Kubernetes Dashboard using: ```https://<Node_IP>:<NodePo
 https://192.168.35.21:32088/
 ```
 
-**Steps to Change the NodePort** (options)
+**Summary Steps to Change the NodePort (Repeat) ** (options)
 
 1. Edit the Service and Set NodePort Manually
 
