@@ -32,10 +32,7 @@ $ kubectl get sa/dashboard-admin-sa -n kubernetes-dashboard
 ```
 ![](../assets/images/9_verify_admin_sa.png)
 
-or use ```kubectl patch``
-```
-kubectl patch svc kubernetes-dashboard -n kubernetes-dashboard -p '{"spec":{"type":"NodePort"}}'
-```
+
 **3.  Create a Secret for the Service Account**
 Run the following command to create a secret with a token for the dashboard-admin-sa service account:
 ```
@@ -105,7 +102,13 @@ $ kubectl edit service kubernetes-dashboard -n kubernetes-dashboard
 
 Change the type from ClusterIP to NodePort. 
 ![](../assets/images/9_edit_clusterip_to_nodePort2.png)
-Then, access the dashboard at:
+Then, access the dashboard to nodeport
+
+**-option use **
+or use ```kubectl patch``
+```
+kubectl patch svc kubernetes-dashboard -n kubernetes-dashboard -p '{"spec":{"type":"NodePort"}}'
+```
 
 Check nodeport:  
 ```
