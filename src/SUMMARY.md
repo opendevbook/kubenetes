@@ -16,3 +16,11 @@
 - [ClusterIP Network](./module1/clusterip.md)
 - [NodePort + Loadbalance](./module1/kubenetwork_nginx.md)
 - [Kubenetes Dashboard](./module1/dashbaord.md)
+
+# Week 8 Test Network 
+- [Workshop](./module1/workshop1.md)
+- [Nodeport network](./module1/nodepod.md)
+- [Jenkins menifest deployment](./module1/jenkin.md)
+- [Edit Vagrantfile](./module1/editvagrant.md)
+- [Create bride interface](./module1/brideinterface.md)
+- [Create Loadbalancer](./module1/loadbalancer.md)
