@@ -5,6 +5,16 @@
 
 All the Jenkins Kubernetes manifest files used here are hosted on GitHub. Please clone the repository if you have trouble copying the manifest from the document.
 
+- Create a Namespace
+
+- Create a service account with Kubernetes admin permissions.
+
+- Create local persistent volume for persistent Jenkins data on Pod restarts.
+
+- Create a deployment YAML and deploy it.
+
+- Create a service YAML and deploy it.
+
 ```
 git clone https://github.com/scriptcamp/kubernetes-jenkins
 ```
@@ -125,7 +135,7 @@ $ kubectl get nodes
 ```
 
 Let’s create the volume using kubectl:
-````
+```
 $ kubectl create -f volume.yaml
 storageclass.storage.k8s.io/local-storage created
 persistentvolume/jenkins-pv-volume created
@@ -239,3 +249,46 @@ apply service
 $ kubectl apply -f jenkins-service.yaml 
 service/jenkins-service created
 ```
+
+```
+$ kubectl get pods -A
+```
+
+![](../assets/images/jk1_get_pods.png)
+
+```
+$ kubectl get svc -A
+```
+
+![](../assets/images/jk1_get_svc.png)
+
+
+login nodeport 32000
+```
+http://192.168.35.21:32000/
+```
+![](../assets/images/jk1_login.png)
+
+# how to get ```/var/jenkins_home/secrets/initialAdminPassword```
+
+```
+$ kubectl get pods -n devops-tools
+NAME                      READY   STATUS    RESTARTS   AGE
+jenkins-bf6b8d5fb-cwv8p   1/1     Running   0          74m
+$ kubectl exec jenkins-bf6b8d5fb-cwv8p -n devops-tools  -- cat /var/jenkins_home/secrets/initialAdminPassword
+f416325f94b54c5b91f4befc85c1baf9
+[vagrant@k8s-master-01 ~]$ 
+```
+
+![](../assets/images/jk1_get_password.png)
+
+![](../assets/images/jk1_get_password2.png)
+- f416325f94b54c5b91f4befc85c1baf9
+
+![](../assets/images/jk1_create_admin.png)
+
+![](../assets/images/jk1_create_url.png)
+
+![](../assets/images/jk1_get_start.png)
+
+![](../assets/images/jk1_jenkin_dashboard.png)
