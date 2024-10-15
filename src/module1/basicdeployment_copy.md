@@ -1,6 +1,9 @@
 #  Basic Deployment 
 ![](../assets/images/logo-kube.jpg)
 
+```
+
+```
 Beginners
 A basic Kubernetes lab setup for beginners to understand how to deploy, scale, and manage applications in a Kubernetes cluster. In this example, we'll deploy an Nginx web server.  
 
